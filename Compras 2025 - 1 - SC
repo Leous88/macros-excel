@@ -1,0 +1,64 @@
+Sub SolicitudesCompra()
+    Dim wsFormulario As Worksheet
+    Dim wsSC As Worksheet
+    Dim wsDetalles As Worksheet
+    Dim wsEvaluacion As Worksheet
+    Dim nuevaFilaSC As Long
+    Dim nuevaFilaDetalles As Long
+    Dim nuevaFilaEvaluacion As Long
+    Dim i As Long
+    Dim inicioItems As Long
+
+    ' Definir las hojas
+    Set wsFormulario = ThisWorkbook.Sheets("Formulario")
+    Set wsSC = ThisWorkbook.Sheets("SC")
+    Set wsDetalles = ThisWorkbook.Sheets("SC-detalles")
+    Set wsEvaluacion = ThisWorkbook.Sheets("Evaluación")
+
+    ' Determinar la fila de inicio de los ítems
+    inicioItems = 10 ' Ajusta esto según sea necesario
+
+    ' Encontrar la siguiente fila disponible en la hoja SC
+    nuevaFilaSC = wsSC.Cells(wsSC.Rows.Count, 1).End(xlUp).Row + 1
+
+    ' Copiar datos de la solicitud principal a la hoja SC
+    wsSC.Cells(nuevaFilaSC, 1).Value = wsFormulario.Cells(1, 2).Value ' N° Solicitud
+    wsSC.Cells(nuevaFilaSC, 2).Value = wsFormulario.Cells(2, 2).Value ' Solicitante
+    wsSC.Cells(nuevaFilaSC, 3).Value = wsFormulario.Cells(3, 2).Value ' Unidad
+    wsSC.Cells(nuevaFilaSC, 4).Value = wsFormulario.Cells(4, 2).Value ' Fecha Solicitud
+    wsSC.Cells(nuevaFilaSC, 5).Value = wsFormulario.Cells(5, 2).Value ' Fecha de Recepción
+    wsSC.Cells(nuevaFilaSC, 6).Value = wsFormulario.Cells(6, 2).Value ' Tipo de Compra
+    wsSC.Cells(nuevaFilaSC, 6).Value = wsFormulario.Cells(7, 2).Value ' Tipo Convenio
+    
+    ' Encontrar la siguiente fila disponible en la hoja SC-detalles
+    nuevaFilaDetalles = wsDetalles.Cells(wsDetalles.Rows.Count, 1).End(xlUp).Row + 1
+
+    ' Copiar datos de los ítems a la hoja SC-detalles
+    i = inicioItems
+    Do While wsFormulario.Cells(i, 1).Value <> ""
+        wsDetalles.Cells(nuevaFilaDetalles, 1).Value = wsFormulario.Cells(1, 2).Value ' N° Solicitud
+        wsDetalles.Cells(nuevaFilaDetalles, 2).Value = wsFormulario.Cells(i, 1).Value ' Cantidad
+        wsDetalles.Cells(nuevaFilaDetalles, 3).Value = wsFormulario.Cells(i, 2).Value ' Descripción
+        nuevaFilaDetalles = nuevaFilaDetalles + 1
+        i = i + 1
+    Loop
+
+    ' Encontrar la siguiente fila disponible en la hoja Evaluación
+    nuevaFilaEvaluacion = wsEvaluacion.Cells(wsEvaluacion.Rows.Count, 1).End(xlUp).Row + 1
+
+    ' Copiar datos del tipo de compra a la hoja Evaluación
+    wsEvaluacion.Cells(nuevaFilaEvaluacion, 1).Value = wsFormulario.Cells(1, 2).Value ' N° Solicitud
+    wsEvaluacion.Cells(nuevaFilaEvaluacion, 2).Value = wsFormulario.Cells(6, 2).Value ' Tipo de Compra
+
+    ' Confirmar guardado
+    MsgBox "Datos guardados exitosamente"
+
+    ' Limpiar el formulario
+    wsFormulario.Cells(1, 2).ClearContents
+    wsFormulario.Cells(2, 2).ClearContents
+    wsFormulario.Cells(3, 2).ClearContents
+    wsFormulario.Cells(4, 2).ClearContents
+    wsFormulario.Cells(5, 2).ClearContents
+    wsFormulario.Cells(6, 2).ClearContents
+    wsFormulario.Range("A" & inicioItems & ":B100").ClearContents
+End Sub
