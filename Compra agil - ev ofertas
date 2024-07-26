@@ -1,0 +1,139 @@
+Sub AGIL2024()
+'
+' AGIL2024 Macro
+'
+Dim ws As Worksheet
+    Set ws = ActiveSheet
+
+    Columns("A:A").Select
+    ActiveSheet.Range("$A$1:$L$530").RemoveDuplicates Columns:=1, Header:=xlYes
+    Columns("B:B").Select
+    Selection.Delete Shift:=xlToLeft
+    Columns("D:E").Select
+    Selection.Delete Shift:=xlToLeft
+    Columns("E:G").Select
+    Selection.Delete Shift:=xlToLeft
+    Columns("F:F").Select
+    Selection.ClearContents
+    Range("F1").Select
+    ActiveCell.FormulaR1C1 = "Observación"
+    Rows("1:1").Select
+    Selection.AutoFilter
+    ActiveSheet.AutoFilter.Sort. _
+        SortFields.Clear
+    ActiveSheet.AutoFilter.Sort. _
+        SortFields.Add2 Key:=Range("E1"), SortOn:=xlSortOnValues, Order:= _
+        xlAscending, DataOption:=xlSortNormal
+    With ActiveSheet.AutoFilter. _
+        Sort
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+    Range("A:A").Select
+    Selection.ClearContents
+    Columns("D:D").Select
+    Selection.Delete Shift:=xlToLeft
+    Rows("1:4").Select
+    Selection.Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+    Range("A5").Select
+    ActiveCell.FormulaR1C1 = "Cotización"
+    Range("C3").Select
+    ActiveWindow.SmallScroll Down:=8
+    Columns("D:D").Select
+    Range("D9").Activate
+    Selection.Style = "Currency [0]"
+    Range("C37").Select
+    ActiveWindow.SmallScroll Down:=-8
+    Columns("F:K").Select
+    Selection.Delete Shift:=xlToLeft
+    Range("C2").Select
+    
+     Dim i As Long
+    Dim UltimaFila As Long
+    UltimaFila = ActiveSheet.Cells(Rows.Count, 4).End(xlUp).Row
+    ID = 1
+    i = 5
+   While i < UltimaFila
+    i = i + 1
+   Range("A" & i).Value = ID
+   ID = ID + 1
+   Wend
+    
+    UltimaFila = ActiveSheet.Cells(Rows.Count, 4).End(xlUp).Row + 5
+    
+    Range("D" & UltimaFila).Value = "MARCELA VILLAGRA CASTRO"
+    Range("B" & UltimaFila).Value = "Nombre Funcionario"
+    
+    UltimaFila = ActiveSheet.Cells(Rows.Count, 4).End(xlUp).Row + 1
+    Range("D" & UltimaFila).Value = "DIRECTORA"
+    Range("B" & UltimaFila).Value = "UNIDAD REQUIRENTE"
+    
+    UltimaFila = ActiveSheet.Cells(Rows.Count, 4).End(xlUp).Row + 1
+    Range("D" & UltimaFila).Value = "CESFAM SAN RAFAEL"
+    Range("B" & UltimaFila).Value = "CESFAM SAN RAFAEL"
+    
+ '  // crear TABLA CON LINEAS
+ 
+  UltimaFila = ActiveSheet.Cells(Rows.Count, 1).End(xlUp).Row
+
+ ActiveSheet.ListObjects.Add(xlSrcRange, Range("$A$5:$E$" & UltimaFila), , xlYes).Name = _
+        "Tabla1"
+  
+ActiveSheet.ListObjects("Tabla1").TableStyle = "TableStyleMedium15"
+
+    '  //
+   Range("C1").Select
+    ActiveCell.FormulaR1C1 = "EVALUACIÓN DE OFERTAS"
+    Range("C2").Select
+    Dim idCOT As String
+    idCOT = InputBox("Por favor ingresa el valor para ID: SOLO EL NUMERO", "Ingresar ID")
+     If idCOT <> "" Then
+        ActiveCell.Value = "ID 3210- " & idCOT & "-COT24"
+    Else
+        MsgBox "No has ingresado ningún valor para ID." ' Mostrar mensaje si no se ingresa ningún valor
+    End If
+    
+      
+    Range("C3").Select
+    Dim idglosa As String
+    idglosa = InputBox("Por favor ingresa la glosa, ejemplo. (medicamentos)")
+     If idglosa <> "" Then
+        ActiveCell.Value = idglosa
+    Else
+        MsgBox "No has ingresado ningún valor para GLOSA." ' Mostrar mensaje si no se ingresa ningún valor
+    End If
+  
+' //Configurar impresión
+    With ws.PageSetup
+        .Orientation = xlLandscape
+        .Zoom = False
+        .FitToPagesWide = 1
+        .FitToPagesTall = 1
+    End With
+
+
+
+ ' // GUARDAR ARCHIVO EN CARPETA
+     On Error Resume Next
+         ' Define la ruta de la carpeta
+    Dim carpeta As String
+    carpeta = "D:\01 - ADQUISICIONES\08 - DECRETOS\05 - COMPRA AGIL\2024\ev ofertas compra agil"
+    
+    ' Crea la carpeta si no existe
+    If Dir(carpeta, vbDirectory) = "" Then
+        MkDir carpeta
+    End If
+    
+    ' Define el nombre del archivo basado en el contenido de la celda C2 y agrega la extensión .xlsx
+    Dim archivo As String
+    archivo = Range("C2").Value & ".xlsx"
+    
+    ' Guarda el archivo en la ruta especificada con el nombre de archivo obtenido
+    ActiveWorkbook.SaveAs Filename:=carpeta & "\" & archivo, FileFormat:=xlOpenXMLWorkbook
+    
+    End Sub
+
+

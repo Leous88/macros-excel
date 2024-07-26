@@ -1,0 +1,224 @@
+Sub LICITACIONES()
+
+    Dim ws As Worksheet
+    Dim rng As Range, cell As Range
+    Dim startRow As Long, endRow As Long
+    Dim headerRow As Long
+    Dim tblIndex As Integer
+    Dim tbl As ListObject
+    Dim weightPrecio As Double, weightTecnico As Double, weightTiempo As Double
+    Dim formulaPuntajeTotal As String
+    Dim replacements As Variant
+    Dim i As Integer
+    Dim numLicitacion As String
+    Dim filaInicio As Long
+    Dim nombres(1 To 3) As String
+    Dim cargos(1 To 3) As String
+    Dim instituciones(1 To 3) As String
+    Dim tblRange As Range
+    Dim savePath As String
+    Dim folderPath As String
+    Dim yearStr As String
+
+    ' Establecer la hoja activa como la hoja de trabajo
+    Set ws = ActiveSheet
+
+    ' Formatear celdas en la hoja activa
+    With ws
+        .Cells.Select
+        With Selection
+            .HorizontalAlignment = xlLeft
+            .VerticalAlignment = xlBottom
+            .WrapText = False
+            .Orientation = 0
+            .AddIndent = False
+            .ShrinkToFit = False
+            .ReadingOrder = xlContext
+            .MergeCells = False
+        End With
+
+        .Columns("B:B").Delete Shift:=xlToLeft
+        .Columns("E:E").Delete Shift:=xlToLeft
+        .Columns("C:C").Replace What:="Cantidad Ofertada", Replacement:="Cantidad", _
+            LookAt:=xlPart, SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:= _
+            False, ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
+        .Columns("E:E").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
+        .Columns("B:D").SpecialCells(xlCellTypeBlanks).Delete Shift:=xlToLeft
+        .Columns("D:E").Style = "Currency [0]"
+        .Columns("C:E").EntireColumn.AutoFit
+        .Range("C7").Select
+    End With
+
+    ' Insertar 4 filas al inicio de la hoja después de formatear las celdas
+    Set rng = ws.Rows("1:4")
+    rng.Insert Shift:=xlDown
+
+    ' Escribir los textos en las celdas especificadas
+    numLicitacion = InputBox("Ingrese el número de la Licitación (15-LE24, sin el 3210-):", "Número de Licitación")
+    ws.Range("B1").Value = "Evaluación de ofertas"
+    ws.Range("B2").Value = "Licitación ID 3210-" & numLicitacion
+    ws.Range("B3").Value = InputBox("Ingrese el concepto de la Licitación:", "Concepto de Licitación")
+
+    ' Solicitar ponderaciones al usuario
+    weightPrecio = InputBox("Ingrese la ponderación para Precio (en porcentaje):", "Ponderación Precio")
+    weightTecnico = InputBox("Ingrese la ponderación para Técnico (en porcentaje):", "Ponderación Técnico")
+    weightTiempo = InputBox("Ingrese la ponderación para Tiempo (en porcentaje):", "Ponderación Tiempo")
+
+    ' Validar que las ponderaciones sumen 100
+    If weightPrecio + weightTecnico + weightTiempo <> 100 Then
+        MsgBox "Las ponderaciones deben sumar 100%.", vbExclamation
+        Exit Sub
+    End If
+
+    ' Convertir las ponderaciones a cadenas con puntos como separadores decimales
+    formulaPuntajeTotal = "=[@[Precio]]*" & Replace(weightPrecio / 100, ",", ".") & " + [@[Técnico]]*" & Replace(weightTecnico / 100, ",", ".") & " + [@[Tiempo]]*" & Replace(weightTiempo / 100, ",", ".")
+
+    ' Continuar con el resto del código para la creación de tablas y corrección de tipografía
+    tblIndex = 1
+    replacements = Array( _
+        Array("Ã ", "Á"), _
+        Array("Ã¡", "á"), _
+        Array("Ã‰", "É"), _
+        Array("Ã©", "é"), _
+        Array("Ã ", "Í"), _
+        Array("Ã­", "í"), _
+        Array("Ã“", "Ó"), _
+        Array("Ã³", "ó"), _
+        Array("Ãš", "Ú"), _
+        Array("Ãº", "ú"), _
+        Array("Ã‘", "Ñ"), _
+        Array("Ã±", "ñ"), _
+        Array("Â¿", "¿") _
+    )
+
+    Set rng = ws.UsedRange
+
+    ' Corrección de la tipografía
+    For Each cell In rng
+        For i = LBound(replacements) To UBound(replacements)
+            cell.Value = Replace(cell.Value, replacements(i)(0), replacements(i)(1))
+        Next i
+    Next cell
+
+    ' Continuar con el resto del código para la creación de tablas...
+    tblIndex = 1
+
+    For Each cell In rng.Columns(5).Cells
+        If Not IsEmpty(cell.Value) And InStr(cell.Value, "Monto") > 0 Then
+            startRow = cell.Row
+
+            ' Encontrar el final del segmento
+            endRow = startRow
+            Do While endRow <= rng.Rows.Count And Not IsEmpty(ws.Cells(endRow + 1, 5).Value)
+                endRow = endRow + 1
+            Loop
+
+            ' Verificar si hay datos debajo del encabezado
+            If endRow > startRow Then
+                ' Definir la fila de encabezado
+                headerRow = startRow + 1
+
+                ' Definir el rango del segmento
+                Set tblRange = ws.Range(ws.Cells(headerRow - 1, 1), ws.Cells(endRow, 5))
+
+                ' Crear una tabla con el rango del segmento
+                Set tbl = ws.ListObjects.Add(xlSrcRange, tblRange, , xlYes)
+                tbl.Name = "Tabla" & tblIndex
+
+                ' Añadir columnas adicionales
+                With tbl
+                    .ListColumns.Add (6)
+                    .ListColumns(6).Name = "Precio"
+                    .ListColumns.Add (7)
+                    .ListColumns(7).Name = "Técnico"
+                    .ListColumns.Add (8)
+                    .ListColumns(8).Name = "Tiempo"
+                    .ListColumns.Add (9)
+                    .ListColumns(9).Name = "Puntaje Total"
+                    .ListColumns.Add (10)
+                    .ListColumns(10).Name = "Observación"
+                End With
+
+                ' Añadir fila de totales
+                tbl.ShowTotals = True
+
+                ' Configurar la columna "Precio Unitario" (columna D) para mostrar el valor mínimo
+                tbl.ListColumns("Precio Unitario").TotalsCalculation = xlTotalsCalculationMin
+
+                ' Añadir la fórmula a la columna "Precio"
+                tbl.ListColumns("Precio").DataBodyRange.Formula = "=(MIN([Precio Unitario]) / [@[Precio Unitario]]) * 100"
+
+                ' Añadir la fórmula a la columna "Puntaje Total" con ponderaciones
+                tbl.ListColumns("Puntaje Total").DataBodyRange.Formula = formulaPuntajeTotal
+
+                ' Añadir la fórmula a la columna "Observación"
+                tbl.ListColumns("Observación").DataBodyRange.Formula = "=IF([@[Puntaje Total]]=MAX([Puntaje Total]), ""Mejor Oferta"", """")"
+
+                ' Asegurarse de que las columnas "Precio", "Técnico", "Tiempo" y "Puntaje Total" sean tratadas como valores numéricos
+                tbl.ListColumns("Precio").DataBodyRange.NumberFormat = "0.00"
+                tbl.ListColumns("Técnico").DataBodyRange.NumberFormat = "0.00"
+                tbl.ListColumns("Tiempo").DataBodyRange.NumberFormat = "0.00"
+                tbl.ListColumns("Puntaje Total").DataBodyRange.NumberFormat = "0.00"
+
+                tblIndex = tblIndex + 1
+            End If
+        End If
+    Next cell
+
+    ' Agregar firmantes al final del documento en columnas separadas
+    filaInicio = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row + 5 ' Obtener la última fila utilizada en columna B y sumarle 5 filas
+
+    ' Firmante 1
+    nombres(1) = "Funcionario"
+    cargos(1) = "Unidad Requirente"
+    instituciones(1) = "CESFAM San Rafael"
+
+    ' Firmante 2
+    nombres(2) = "Marcela Villagra Castro"
+    cargos(2) = "Directora"
+    instituciones(2) = "CESFAM San Rafael"
+
+    ' Firmante 3
+    nombres(3) = "Funcionario"
+    cargos(3) = "Unidad Requirente"
+    instituciones(3) = "CESFAM San Rafael"
+
+    ' Escribir los nombres de los firmantes en la fila inicial
+    ws.Cells(filaInicio, 2).Value = nombres(1)
+    ws.Cells(filaInicio, 3).Value = nombres(2)
+    ws.Cells(filaInicio, 6).Value = nombres(3)
+
+    ' Escribir los cargos de los firmantes una fila debajo de los nombres
+    ws.Cells(filaInicio + 1, 2).Value = cargos(1)
+    ws.Cells(filaInicio + 1, 3).Value = cargos(2)
+    ws.Cells(filaInicio + 1, 6).Value = cargos(3)
+
+    ' Escribir las instituciones de los firmantes dos filas debajo de los cargos
+    ws.Cells(filaInicio + 2, 2).Value = instituciones(1)
+    ws.Cells(filaInicio + 2, 3).Value = instituciones(2)
+    ws.Cells(filaInicio + 2, 6).Value = instituciones(3)
+
+    ' Notificar al usuario que se han agregado los firmantes
+    MsgBox "Se han agregado los firmantes al final del documento, VERIFIQUE y CAMBIE según requerimiento.", vbInformation
+    
+    ' Asignar el año actual a currentYear
+    currentYear = Year(Date)
+    
+      ' Crear la carpeta si no existe
+    If Dir("D:\01 - ADQUISICIONES\09 - LICITACIONES\" & currentYear, vbDirectory) = "" Then
+        MkDir "D:\01 - ADQUISICIONES\09 - LICITACIONES\" & currentYear
+    End If
+    
+    ' Guardar el archivo en la ruta especificada
+    savePath = "D:\01 - ADQUISICIONES\09 - LICITACIONES\" & currentYear & "\Evaluación ID 3210-" & numLicitacion & ".xlsx"
+        
+   ' Asegurarse de que savePath es correcto antes de guardar
+    Debug.Print savePath
+
+  ' Guardar el archivo (asegurarse de que este código se encuentra en el contexto correcto para guardar el archivo)
+    ActiveWorkbook.SaveAs Filename:=savePath, FileFormat:=xlOpenXMLWorkbook
+  
+    'MsgBox "El archivo se ha guardado en la ruta especificada.", vbInformation
+    MsgBox "Archivo guardado en: " & savePath
+
+End Sub
